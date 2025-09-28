@@ -7,8 +7,8 @@
  */
 
 // --- デバッグ設定 ---
-export const DEBUG_MODE = true; // trueにするとデバッグ用の設定が有効になります。falseで無効。
-export const DEBUG_UNLOCK_ALL_ACHIEVEMENTS = true; // trueにすると全実績が解除されます
+export const DEBUG_MODE = false; // trueにするとデバッグ用の設定が有効になります。falseで無効。
+export const DEBUG_UNLOCK_ALL_ACHIEVEMENTS = false; // trueにすると全実績が解除されます
 
 // --- 音声ファイル一覧 ---
 // ここでnew Audio()を使い、音声ファイルをあらかじめ読み込んでおきます。
@@ -42,5 +42,6 @@ export const sounds = {
         water_magic: new Audio('se_water_magic.mp3')
     }
 };
+
 
 
