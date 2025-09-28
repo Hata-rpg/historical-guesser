@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ヒストリカル・ゲッサー</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome (実績・音量・SNS・ランキングアイコン用) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <!-- 分割したカスタムCSSファイルを読み込み -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- ▼▼▼ Google Analytics タグ ▼▼▼ -->
+    <!-- TODO: 'G-7DPQFDY0DY' をご自身の測定IDに置き換えてください -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MZ968HXN00"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-MZ968HXN00');
+    </script>
+    <!-- ▲▲▲ Google Analytics タグ ▲▲▲ -->
+</head>
+<body class="w-screen h-screen overflow-auto flex items-center justify-center p-4">
+
+    <!-- スクリーンショット読み込みオーバーレイ -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[5000]">
+        <div class="parchment p-6 rounded-lg text-center">
+            <p class="text-xl font-bold">画像を生成中...</p>
+        </div>
+    </div>
+    
+    <!-- 音量調整モーダル -->
+    <div id="volume-control-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[3000]">
+        <div class="parchment p-8 rounded-lg text-left max-w-sm mx-4 w-full relative">
+            <button id="close-volume-modal-button" class="absolute top-2 right-4 text-3xl font-bold hover:text-red-700 transition-colors">&times;</button>
+            <h2 class="text-2xl font-bold mb-6 text-center">音量設定</h2>
+            <div class="space-y-4">
+                <div class="flex flex-col">
+                    <label for="bgm-volume-slider" class="mb-2 text-lg">BGM</label>
+                    <input id="bgm-volume-slider" type="range" min="0" max="1" step="0.01">
+                </div>
+                <div class="flex flex-col">
+                    <label for="se-volume-slider" class="mb-2 text-lg">効果音</label>
+                    <input id="se-volume-slider" type="range" min="0" max="1" step="0.01">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- データ初期化確認モーダル -->
+    <div id="reset-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[3000]">
+        <div class="parchment p-8 rounded-lg text-left max-w-sm mx-4 w-full relative">
+            <h2 class="text-2xl font-bold mb-4 text-center">データ初期化</h2>
+            <p class="mb-6 text-center">すべての実績、所持金、アイテム強化がリセットされます。この操作は元に戻せません。よろしいですか？</p>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-reset-button" class="game-button bg-red-700 hover:bg-red-800 border-red-900 shadow-[0_4px_#7f1d1d] px-6 py-2 rounded-lg font-bold">はい</button>
+                <button id="cancel-reset-button" class="game-button px-6 py-2 rounded-lg font-bold">いいえ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 実績解除通知コンテナ -->
+    <div id="notification-container"></div>
+
+    <!-- 一時停止モーダル -->
+    <div id="pause-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[4000]">
+        <div class="parchment p-8 rounded-lg text-center max-w-sm mx-4">
+            <h2 class="text-3xl font-bold mb-6">一時停止中</h2>
+            <div class="flex flex-col gap-4">
+                <button id="resume-game-button" class="game-button text-xl px-8 py-3 rounded-lg font-bold">ゲームに戻る</button>
+                <button id="return-to-title-button" class="game-button bg-gray-600 hover:bg-gray-700 border-gray-800 shadow-[0_4px_#4a5568] text-xl px-8 py-3 rounded-lg font-bold">タイトルに戻る</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 会話パートモーダル -->
+    <div id="dialogue-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex flex-col justify-end items-center z-[6000] p-4">
+        <div id="dialogue-background-screen" class="absolute inset-0 w-full h-full bg-center bg-cover opacity-0 transition-opacity duration-500 z-0"></div>
+        <div id="fullscreen-image-container" class="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500 z-10">
+            <img id="fullscreen-image" src="" class="max-w-full max-h-full object-contain">
+        </div>
+        <div id="character-display" class="grid absolute bottom-0 left-1/2 -translate-x-1/2 h-[95vh] w-auto transition-opacity duration-300 opacity-0 z-5">
+            <img id="heroine-image" src="" alt="アニー" class="h-full object-contain transition-opacity duration-300 [grid-area:1/1]" style="filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));">
+            <img id="caster-image" src="" alt="キャスター" class="h-full object-contain transition-opacity duration-300 opacity-0 [grid-area:1/1]" style="filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));">
+        </div>
+        <div id="dialogue-box" class="relative w-full max-w-4xl parchment p-6 rounded-lg cursor-pointer border-4 border-[#a4886d] transition-all duration-300 transform translate-y-full opacity-0 z-20">
+            <div id="speaker-name" class="font-bold text-xl mb-2 text-[#5a2d0c]"></div>
+            <p id="dialogue-text" class="text-lg leading-relaxed"></p>
+            <div class="absolute bottom-3 right-5 text-2xl animate-bounce text-[#8b4513]">▼</div>
+        </div>
+    </div>
+
+
+    <div id="game-container" class="w-full h-full max-w-7xl mx-auto">
+
+        <div id="pre-start-screen" class="w-full h-full flex flex-col items-center justify-center text-center p-8 cursor-pointer relative overflow-hidden">
+            <img src="girl.png" id="pre-start-girl" alt="探検家の少女">
+            <div class="parchment p-10 rounded-lg animate-pulse relative z-10">
+                <h1 class="text-4xl font-bold">クリックして開始</h1>
+            </div>            
+        </div>
+
+        <div id="start-screen" class="hidden fixed inset-0 flex flex-col items-center justify-center text-center">
+            
+            <div id="start-screen-background">
+                <div class="bg-layer layer-1" data-depth="0.1"></div>
+                <div class="bg-layer layer-2" data-depth="0.2"></div>
+                <div class="bg-layer layer-3" data-depth="0.4"></div>
+                <div class="bg-layer layer-4" data-depth="0.6"></div>
+            </div>
+            <canvas id="particle-canvas"></canvas>
+            <img id="start-screen-girl" src="girl.png" alt="探検家の少女" class="absolute bottom-0 left-1/2 -translate-x-1/2 h-[95vh] max-w-[90vw] object-contain opacity-[0.15] pointer-events-none z-[2]">
+            
+            <div class="absolute top-8 left-8 z-10 title-fade-in" style="animation-delay: 0.5s;">
+                <div id="money-display-start" class="money-display parchment">
+                    <i class="fa-solid fa-coins"></i>
+                    <span id="money-value-start">0</span>
+                </div>
+            </div>
+            
+            <div class="absolute bottom-8 left-8 z-10 title-fade-in" style="animation-delay: 0.5s;">
+                <button id="reset-data-button" title="データ初期化" class="game-button reset-button shadow-none w-16 h-16 rounded-full flex items-center justify-center text-3xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </button>
+            </div>
+
+
+            <div class="absolute top-8 right-8 z-10 flex gap-4 title-fade-in" style="animation-delay: 0.5s;">
+                <button id="debug-end-roll-button" title="エンドロール（デバッグ）" class="game-button hidden shadow-none w-16 h-16 rounded-full flex items-center justify-center text-3xl bg-purple-600 border-purple-800 hover:bg-purple-700">
+                    <i class="fa-solid fa-film"></i>
+                </button>
+                <button id="shop-button" title="ショップ" class="game-button shadow-none w-16 h-16 rounded-full flex items-center justify-center text-3xl">
+                    <i class="fa-solid fa-store"></i>
+                </button>
+                <button id="volume-button" title="音量" class="game-button shadow-none w-16 h-16 rounded-full flex items-center justify-center text-3xl">
+                    <i id="volume-icon" class="fa-solid fa-volume-high"></i>
+                </button>
+                <button id="achievements-button" title="実績" class="game-button shadow-none w-16 h-16 rounded-full flex items-center justify-center text-3xl">
+                    <i class="fa-solid fa-trophy"></i>
+                </button>
+                <button id="story-log-button" title="ヘルプ (準備中)" class="game-button shadow-none w-16 h-16 rounded-full flex items-center justify-center text-3xl">
+                    <i class="fa-solid fa-question"></i>
+                </button>
+            </div>
+            
+            <div class="relative z-10 flex flex-col items-center p-8">
+                <div class="parchment p-10 rounded-lg">
+                    <div class="title-container">
+                        <h1 class="text-5xl md:text-6xl font-bold mb-4 title-fade-in" style="text-shadow: 2px 2px #c8bda4;">ヒストリカル・ゲッサー</h1>
+                        <p class="text-xl md:text-2xl mt-4 mb-8 title-fade-in" style="animation-delay: 0.2s;">歴史の断片が示す場所</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 title-fade-in" style="animation-delay: 0.4s;">
+                        <button id="start-button" class="game-button text-2xl px-10 py-4 rounded-lg font-bold w-full sm:w-auto">ストーリーモード</button>
+                        <button id="time-attack-start-button" class="game-button text-2xl px-10 py-4 rounded-lg font-bold w-full sm:w-auto">タイムアタック</button>
+                        <button id="final-investigation-button" class="game-button text-2xl px-10 py-4 rounded-lg font-bold w-full sm:w-auto hidden bg-amber-500 border-amber-700 shadow-[0_4px_#a16207] hover:bg-amber-600">最終調査へ</button>
+                    </div>
+
+                    <!-- ▼▼▼ [追加] 最終調査解放プログレスバー ▼▼▼ -->
+                    <div id="final-investigation-progress-container" class="mt-6 text-sm title-fade-in hidden" style="animation-delay: 0.5s;">
+                        <p class="font-bold text-[#6d5b4b]">最終調査解放まで</p>
+                        <div class="w-full bg-[#c8bda4] rounded-full h-4 mt-1 border-2 border-[#a4886d] overflow-hidden">
+                            <div id="final-investigation-progress-bar" class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+                        </div>
+                        <p id="final-investigation-progress-text" class="text-xs mt-1 text-[#6d5b4b]">実績達成率: 0.0% / 80.0%</p>
+                    </div>
+                    <!-- ▲▲▲ [追加] ここまで ▲▲▲ -->
+
+                    <div id="start-options" class="mt-6 text-sm title-fade-in" style="animation-delay: 0.5s;">
+                        <div id="compass-toggle-container" class="hidden">
+                            <input type="checkbox" id="compass-toggle" class="align-middle" checked>
+                            <label for="compass-toggle" class="align-middle cursor-pointer">コンパスを使用する</label>
+                            <p class="text-xs mt-1 text-[#6d5b4b]">（OFFでスコア <span class="font-bold text-green-700">1.5倍</span> の挑戦）</p>
+                        </div>
+                        <div id="prioritize-unplayed-container" class="hidden mt-2">
+                            <input type="checkbox" id="prioritize-unplayed-toggle" class="align-middle">
+                            <label for="prioritize-unplayed-toggle" class="align-middle cursor-pointer">未達成の物語を優先</label>
+                            <p class="text-xs mt-1 text-[#6d5b4b]">（15,000点未満の物語が選ばれます）</p>
+                        </div>
+                    </div>
+                </div>
+    
+                <div class="flex flex-col md:flex-row gap-4 mt-8 max-w-2xl w-full title-fade-in" style="animation-delay: 0.6s;">
+                    <div class="parchment p-4 rounded-lg w-full md:w-1/2">
+                        <h2 class="text-2xl font-bold mb-2 border-b-2 border-dashed border-[#a4886d] pb-1">更新情報</h2>
+                        <ul class="text-left text-sm space-y-1">
+                            <li><span class="font-bold mr-2">2025.9.22:</span>モード解放機能、データ初期化機能を追加。</li>
+                            <li><span class="font-bold mr-2">2025.9.21:</span>ショップ機能を追加。</li>
+                            <li><span class="font-bold mr-2">2025.9.20:</span>バージョン1.00公開。</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="parchment p-4 rounded-lg w-full md:w-1/2">
+                        <h2 class="text-2xl font-bold mb-2 border-b-2 border-dashed border-[#a4886d] pb-1">クレジット</h2>
+                        <ul class="text-left text-sm space-y-1">
+                            <li>効果音：OtoLogic 様</a></li>
+                            <li>音楽：MoppySound 様</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-screen" class="hidden w-full h-full flex flex-col lg:flex-row gap-4">
+            <div class="parchment w-full lg:w-1/3 h-2/5 lg:h-full flex flex-col p-4 rounded-lg overflow-y-auto">
+                <div id="story-mode-ui" class="flex justify-between items-center border-b-2 border-dashed border-[#a4886d] pb-2 mb-2">
+                    <h2 id="story-title" class="text-xl font-bold"></h2>
+                    <div id="chapter-display" class="text-lg"></div>
+                </div>
+                <div id="time-attack-mode-ui" class="hidden text-center border-b-2 border-dashed border-[#a4886d] pb-2 mb-2">
+                     <h2 class="text-2xl font-bold">タイムアタック</h2>
+                </div>
+
+                <div class="text-center my-2">
+                    <div id="timer" class="text-4xl font-bold tracking-widest"></div>
+                    <div id="time-attack-score" class="text-2xl font-bold hidden">スコア: 0</div>
+                    <div id="combo-display" class="text-xl font-bold text-orange-500 h-6"></div>
+                </div>
+                <div class="flex-grow space-y-4">
+                    <div class="p-3 bg-[#fdfaf2] rounded-md shadow-inner">
+                        <p id="narrative-box" class="text-base leading-relaxed"></p>
+                    </div>
+                    <div>
+                        <h3 id="location-title" class="text-2xl font-bold text-center h-8"></h3>
+                    </div>
+                    <div id="hints-area" class="space-y-2">
+                        <p id="hint-1" class="p-2 bg-[#fdfaf2] rounded-md shadow-inner opacity-0 transition-opacity duration-500"></p>
+                        <p id="hint-2" class="p-2 bg-[#fdfaf2] rounded-md shadow-inner opacity-0 transition-opacity duration-500"></p>
+                        <p id="hint-3" class="p-2 bg-[#fdfaf2] rounded-md shadow-inner opacity-0 transition-opacity duration-500"></p>
+                    </div>
+                    <div id="image-area" class="w-full aspect-video bg-[#fdfaf2] rounded-md shadow-inner flex items-center justify-center overflow-hidden">
+                        <img id="hint-image" src="" alt="ヒント画像" class="w-full h-full object-cover hidden">
+                    </div>
+                </div>
+            </div>
+
+            <div class="parchment w-full lg:w-2/3 h-3/5 lg:h-full flex flex-col rounded-lg p-2 gap-2" style="position: relative;">
+                <div id="map" class="flex-grow rounded-md"></div>
+                <div id="controls-display" class="absolute bottom-24 left-4 z-[1000] p-2 rounded-md bg-black bg-opacity-40 text-white text-sm font-sans space-y-1">
+                    <p><span class="font-bold">移動:</span> <kbd class="border rounded px-1.5">W</kbd><kbd class="border rounded px-1.5">A</kbd><kbd class="border rounded px-1.5">S</kbd><kbd class="border rounded px-1.5">D</kbd></p>
+                    <p><span class="font-bold">ダッシュ:</span> <kbd class="border rounded px-1.5">Shift</kbd></p>
+                    <p><span class="font-bold">回答/次へ:</span> <kbd class="border rounded px-1.5">Space</kbd></p>
+                    <p><span class="font-bold">一時停止:</span> <kbd class="border rounded px-1.5">Esc</kbd></p>
+                </div>
+                <div id="compass" class="hidden">
+                    <div id="compass-needle"></div>
+                    <div class="compass-label-n">N</div>
+                    <div class="compass-label-e">E</div>
+                    <div class="compass-label-s">S</div>
+                    <div class="compass-label-w">W</div>
+                </div>
+                <div id="action-bar" class="flex-shrink-0 flex items-center justify-between p-2">
+                    <p id="instruction-text" class="text-lg">物語の舞台となった場所を地図上で特定してください。</p>
+                    <div class="flex gap-4 items-center">
+                        <div id="share-chapter-buttons" class="hidden">
+                            <button title="結果を共有" class="share-icon-button w-10 h-10 text-xl"><i class="fa-solid fa-share-from-square"></i></button>
+                        </div>
+                       <button id="submit-answer-button" class="game-button px-8 py-3 rounded-lg text-xl font-bold">回答する</button>
+                       <button id="next-chapter-button" class="game-button px-8 py-3 rounded-lg text-xl font-bold hidden">次の章へ</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="result-screen" class="hidden w-full h-full flex flex-col items-center justify-center text-center p-8">
+            <div class="parchment p-10 rounded-lg max-w-3xl w-full">
+                <h1 id="result-title" class="text-5xl font-bold mb-2">調査完了</h1>
+                <h2 id="result-story-title" class="text-2xl font-bold mb-6 text-[#8b4513]"></h2>
+                <div class="text-3xl mb-4">合計スコア: <span id="total-score" class="font-bold">0</span>点</div>
+                <div id="earned-money-display" class="text-2xl mb-4 h-8"></div>
+                <div id="results-summary" class="space-y-3 text-left w-full mx-auto my-6 border-t-2 border-b-2 border-dashed border-[#a4886d] py-4">
+                </div>
+
+                <div class="flex justify-center items-center gap-8 mt-4">
+                    <button id="restart-button" class="game-button text-2xl px-12 py-4 rounded-lg font-bold">新たな調査を開始する</button>
+                    <div id="share-final-buttons">
+                        <button title="結果を共有" class="share-icon-button w-12 h-12 text-2xl"><i class="fa-solid fa-share-from-square"></i></button>
+                   </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 実績画面 -->
+        <div id="achievements-screen" class="hidden w-full h-full flex flex-col items-center justify-center text-center p-8">
+            <div class="parchment p-10 rounded-lg max-w-4xl w-full h-5/6 flex flex-col">
+                <div class="flex justify-between items-center w-full mb-4 border-b-2 border-dashed border-[#a4886d] pb-4">
+                    <h1 class="text-5xl font-bold">実績一覧</h1>
+                    <div id="achievement-progress" class="text-2xl font-bold text-[#8b4513]">達成率: 0.0%</div>
+                </div>
+                <div id="achievements-list" class="flex-grow overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-[#fdfaf2] rounded-md shadow-inner">
+                    <!-- 実績はここに動的に生成されます -->
+                </div>
+                <div class="flex gap-4 justify-center mt-6">
+                    <button id="back-to-start-button" class="game-button text-xl px-8 py-3 rounded-lg font-bold">戻る</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 調査員の記録画面を追加 -->
+        <div id="story-log-screen" class="hidden w-full h-full flex flex-col items-center justify-center text-center p-8">
+            <div class="parchment p-10 rounded-lg max-w-4xl w-full h-5/6 flex flex-col">
+                <h1 class="text-5xl font-bold mb-4 border-b-2 border-dashed border-[#a4886d] pb-4">調査員の記録</h1>
+                <div class="flex-grow flex gap-6 mt-4 overflow-hidden">
+                    <!-- ストーリーリスト（左側） -->
+                    <div id="story-list-container" class="w-1/3 overflow-y-auto bg-[#fdfaf2] rounded-md shadow-inner p-4 space-y-2">
+                        <!-- ストーリーのタイトルリストがここに動的に生成される -->
+                    </div>
+                    <!-- ストーリー内容（右側） -->
+                    <div id="story-content-container" class="w-2/3 overflow-y-auto bg-[#fdfaf2] rounded-md shadow-inner p-6 text-left leading-relaxed">
+                        <p class="text-gray-500">左のリストから記録を選択してください。</p>
+                    </div>
+                </div>
+                <div class="flex justify-center mt-6">
+                    <button id="back-to-start-from-story-button" class="game-button text-xl px-8 py-3 rounded-lg font-bold">戻る</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ショップ画面 -->
+        <div id="shop-screen" class="hidden w-full h-full flex flex-col items-center justify-center text-center p-8">
+            <div class="parchment p-10 rounded-lg max-w-4xl w-full h-5/6 flex flex-col">
+                <div class="flex justify-between items-center w-full mb-4 border-b-2 border-dashed border-[#a4886d] pb-4">
+                    <h1 class="text-5xl font-bold">ショップ</h1>
+                    <div id="money-display-shop" class="money-display">
+                        <i class="fa-solid fa-coins"></i>
+                        <span id="money-value-shop">0</span>
+                    </div>
+                </div>
+                <div id="item-list" class="flex-grow overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-[#fdfaf2] rounded-md shadow-inner">
+                    <!-- アイテムはここに動的に生成されます -->
+                </div>
+                <div class="flex justify-center mt-6">
+                    <button id="back-to-start-from-shop-button" class="game-button text-xl px-8 py-3 rounded-lg font-bold">戻る</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ▼▼▼ [変更] エンドロールコンテナを修正 ▼▼▼ -->
+    <div id="end-roll-container" class="hidden fixed inset-0 bg-black text-white flex items-center justify-center z-[7000] font-serif">
+        <!-- ▼▼▼ [追加] タイトル表示用のスクリーンを追加 ▼▼▼ -->
+        <div id="end-roll-title-screen" class="absolute inset-0 flex items-center justify-center opacity-0">
+            <div class="text-center">
+                <h1 class="text-5xl md:text-6xl font-bold mb-4" style="text-shadow: 2px 2px #333;">ヒストリカル・ゲッサー</h1>
+                <p class="text-xl md:text-2xl mt-4">歴史の断片が示す場所</p>
+            </div>
+        </div>
+        <!-- ▲▲▲ [追加] ここまで ▲▲▲ -->
+        <div class="w-full max-w-2xl h-full overflow-hidden relative">
+            <div id="end-roll-content" class="absolute bottom-0 left-0 w-full text-center text-2xl leading-loose opacity-0">
+                <!-- Content will be added here by JS -->
+            </div>
+        </div>
+        <button id="skip-end-roll-button" class="absolute bottom-8 right-8 text-white bg-black bg-opacity-50 px-4 py-2 rounded border border-white hover:bg-white hover:text-black transition-colors">スキップ</button>
+    </div>
+    <!-- ▲▲▲ [変更] ここまで ▲▲▲ -->
+
+
+    <!-- 外部JSファイルを読み込み -->
+    <!-- これらのファイルはグローバルスコープに変数を定義するため、モジュールより先に読み込みます -->
+    <script src="stories.js"></script>
+    <script src="achievements.js"></script>
+    <script src="items.js"></script>
+    <!-- ▼▼▼ [変更] heroine_dialogue.js を3つのファイルに分割して読み込み ▼▼▼ -->
+    <script src="dialogue_achievements_story.js"></script>
+    <script src="dialogue_achievements_story2.js"></script>
+    <script src="dialogue_achievements_other.js"></script>
+    <script src="dialogue_items.js"></script>
+    <!-- ▲▲▲ [変更] ここまで ▲▲▲ -->
+    <script src="ending.js"></script>
+
+    <!-- メインのゲームスクリプトをモジュールとして読み込みます -->
+    <!-- type="module" を指定することで、import/export構文が使えるようになります -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
+

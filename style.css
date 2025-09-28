@@ -1,0 +1,689 @@
+/* カスタムスタイル */
+body {
+    font-family: 'Noto Serif JP', serif;
+    background-image: url('https://www.transparenttextures.com/patterns/old-wall.png'), url('https://www.transparenttextures.com/patterns/paper.png');
+    background-color: #f5eeda; /* 羊皮紙のような色 */
+    color: #4a2c2a;
+    user-select: none; /* テキスト選択を無効化 */
+    -webkit-user-select: none; /* Safari用 */
+    -moz-user-select: none; /* Firefox用 */
+    -ms-user-select: none; /* IE/Edge用 */
+}
+
+body.vignette-active::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* 中央の明るい範囲を広げ、周辺の暗さを少し調整 */
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+    z-index: 5;
+}
+
+
+.parchment {
+    background-color: rgba(245, 238, 218, 0.8);
+    border: 2px solid #c8bda4;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
+}
+
+.game-button {
+    background-color: #8b4513; /* サドルブラウン */
+    color: #f5eeda;
+    border: 2px solid #5a2d0c;
+    box-shadow: 0 4px #5a2d0c;
+    transition: all 0.1s ease-in-out;
+}
+
+.game-button:hover {
+    background-color: #a0522d; /* シエンナ */
+    transform: translateY(-2px);
+    box-shadow: 0 6px #5a2d0c;
+}
+
+.game-button:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px #5a2d0c;
+}
+
+.game-button:disabled {
+    background-color: #9d8a7a;
+    box-shadow: 0 4px #7c6c5a;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* 初期化ボタン用の特別なスタイル */
+.reset-button {
+    background-color: #8B0000; /* DarkRed */
+    border-color: #5a0000;
+    box-shadow: 0 4px #5a0000;
+}
+.reset-button:hover {
+    background-color: #a52a2a; /* Brown */
+    border-color: #5a0000;
+    box-shadow: 0 6px #5a0000;
+}
+
+
+#map {
+    height: 100%;
+    width: 100%;
+    cursor: crosshair;
+    filter: sepia(0.7);
+}
+
+#map.time-attack-map {
+    filter: grayscale(1);
+}
+
+.leaflet-container {
+    background: #aad3df;
+}
+
+#narrative-box {
+    letter-spacing: 0.1px; /* for html2canvas rendering consistency */
+}
+
+/* --- コンパスのスタイル --- */
+#compass {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, #fdfaf2 60%, #e9e2d0 100%);
+    border-radius: 50%;
+    border: 2px solid #a4886d;
+    z-index: 1000;
+    font-family: 'Times New Roman', Times, serif;
+    font-weight: bold;
+    color: #5a2d0c;
+}
+#compass-needle {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    transform: rotate(0deg);
+}
+#compass-needle::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 34px solid #e74c3c;
+}
+#compass-needle::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 34px solid #f5eeda;
+}
+.compass-label-n, .compass-label-e, .compass-label-s, .compass-label-w {
+    position: absolute;
+    font-size: 14px;
+}
+.compass-label-n { top: 2px; left: 50%; transform: translateX(-50%); }
+.compass-label-s { bottom: 2px; left: 50%; transform: translateX(-50%); }
+.compass-label-e { right: 5px; top: 50%; transform: translateY(-50%); }
+.compass-label-w { left: 5px; top: 50%; transform: translateY(-50%); }
+
+/* --- 実績通知のスタイル --- */
+#notification-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 4000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.achievement-toast {
+    background-color: #8b4513;
+    color: #f5eeda;
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: 2px solid #5a2d0c;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    opacity: 0;
+    transform: translateX(100%);
+    animation: slideInAndOut 5s forwards;
+}
+.achievement-toast i {
+    font-size: 2em;
+    color: #ffd700; /* Gold */
+}
+@keyframes slideInAndOut {
+    0% { opacity: 0; transform: translateX(100%); }
+    15% { opacity: 1; transform: translateX(0); }
+    85% { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(100%); }
+}
+
+/* --- 音量スライダーのスタイル --- */
+input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    background: transparent;
+}
+
+input[type=range]:focus {
+    outline: none;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 8px;
+    cursor: pointer;
+    background: #a4886d;
+    border-radius: 5px;
+    border: 1px solid #5a2d0c;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #8b4513;
+    cursor: pointer;
+    margin-top: -7px; /* 親要素の中央に配置 */
+    border: 2px solid #5a2d0c;
+}
+
+input[type=range]::-moz-range-track {
+    width: 100%;
+    height: 8px;
+    cursor: pointer;
+    background: #a4886d;
+    border-radius: 5px;
+    border: 1px solid #5a2d0c;
+}
+
+input[type=range]::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #8b4513;
+    cursor: pointer;
+    border: 2px solid #5a2d0c;
+}
+
+/* --- SNS共有ボタンのスタイル --- */
+.share-icon-button {
+    background-color: #a4886d;
+    color: #f5eeda;
+    border-radius: 50%;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #5a2d0c;
+}
+.share-icon-button:hover {
+    transform: scale(1.1);
+    color: white;
+    background-color: #5a2d0c; /* 汎用的なホバー色 */
+    border-color: #4a2c2a;
+}
+
+/* --- タイトル画面エフェクト --- */
+#start-screen-background {
+    position: fixed;
+    top: -50px;
+    left: -50px;
+    right: -50px;
+    bottom: -50px;
+    z-index: 0;
+}
+
+.bg-layer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.3s ease-out;
+}
+
+.layer-1 { background-image: url('https://www.transparenttextures.com/patterns/old-wall.png'); }
+.layer-2 { background-image: url('https://www.transparenttextures.com/patterns/paper.png'); opacity: 0.6; }
+.layer-3 { background-image: url('https://www.transparenttextures.com/patterns/worn-dots.png'); opacity: 0.2; }
+.layer-4 { background-image: url('https://www.transparenttextures.com/patterns/subtle-grunge.png'); opacity: 0.1; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.title-fade-in {
+    animation: fadeIn 0.8s backwards cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+#particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1; /* ビネットより下に配置 */
+}
+
+/* --- コンテンツエリアをビネットの上に表示させる --- */
+#game-container {
+    position: relative; /* z-indexを適用するため */
+    z-index: 10; /* ビネット(z-index: 5)より手前に */
+}
+
+/* --- ストーリーログ画面で選択されたアイテムのスタイル --- */
+#story-list-container .bg-yellow-200 {
+    background-color: #fefcbf; /* Tailwindのyellow-200に近い色 */
+    border: 2px solid #fcd34d; /* Tailwindのyellow-400に近い色 */
+}
+
+/* --- Pre-start Screen Fix --- */
+/* コンテナ自体を画面全体に固定表示させ、親要素のpadding等に影響されないようにします */
+#pre-start-screen {
+    position: fixed !important; /* HTMLのrelativeクラスを上書き */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* --- Pre-start Screen Girl Image --- */
+#pre-start-girl {
+    position: absolute;
+    bottom: 0; /* フッターを削除したため調整 */
+    left: 50%;
+    height: 95vh;
+    max-width: 90vw;
+    object-fit: contain;
+    opacity: 0;
+    animation: fadeInBg 2s 0.5s forwards ease-out;
+    pointer-events: none;
+}
+
+@keyframes fadeInBg {
+    from {
+        opacity: 0;
+        /* 水平方向の中央揃えと、開始時のスケールアップ */
+        transform: translate(-50%, 0) scale(1.05); 
+    }
+    to {
+        opacity: 0.15;
+        /* 水平方向の中央揃え */
+        transform: translate(-50%, 0) scale(1);
+    }
+}
+
+/* --- 所持金表示スタイル --- */
+.money-display {
+    padding: 8px 16px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #8b4513;
+    background-color: rgba(245, 238, 218, 0.9);
+    border: 2px solid #c8bda4;
+}
+
+.money-display .fa-coins {
+    color: #ffd700;
+    filter: drop-shadow(1px 1px 1px #00000060);
+}
+
+/* --- 結果画面のお金獲得アニメーション --- */
+@keyframes money-rise {
+    0% {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    20% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+.money-earned-animation {
+    display: inline-block;
+    animation: money-rise 2s ease-out forwards;
+    color: #8b4513;
+    font-weight: bold;
+}
+.money-earned-animation .fa-coins {
+    color: #ffd700;
+}
+
+/* --- ショップ画面のスタイル --- */
+.item-card {
+    background-color: #fdfaf2;
+    border: 2px solid #a4886d;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative; /* For level display positioning */
+}
+
+.item-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+}
+
+.item-level-display {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: #5a2d0c;
+    color: #f5eeda;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border: 2px solid #f5eeda;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    font-size: 0.7rem;
+    line-height: 1;
+}
+.item-level-display span {
+    font-size: 1.2rem;
+    display: block;
+}
+
+.item-icon {
+    font-size: 4rem;
+    color: #8b4513;
+    margin-bottom: 8px;
+}
+
+.item-info {
+    flex-grow: 1;
+}
+
+.item-name {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.item-description {
+    font-size: 0.9rem;
+    color: #5a2d0c;
+    margin-top: 4px;
+}
+
+.buy-button {
+    width: 100%;
+    padding: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.buy-button .fa-coins {
+    margin-right: 8px;
+    color: #ffd700;
+}
+
+.buy-button.max-level {
+    background-color: #6d5b4b; /* A duller brown */
+    box-shadow: 0 4px #4b3e34;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.buy-button.max-level:hover {
+    transform: none;
+    box-shadow: 0 4px #4b3e34;
+}
+
+/* --- コンボ表示のアニメーション --- */
+#combo-display.combo-animation {
+    animation: combo-pop 0.5s ease-out;
+}
+
+@keyframes combo-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); color: #f59e0b; } /* amber-500 */
+    100% { transform: scale(1); }
+}
+
+/* --- 結果画面のスクロール --- */
+#results-summary {
+    max-height: 35vh;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+#results-summary::-webkit-scrollbar {
+    width: 8px;
+}
+
+#results-summary::-webkit-scrollbar-track {
+    background: #fdfaf2;
+    border-radius: 4px;
+}
+
+#results-summary::-webkit-scrollbar-thumb {
+    background: #a4886d;
+    border-radius: 4px;
+}
+
+#results-summary::-webkit-scrollbar-thumb:hover {
+    background: #8b4513;
+}
+
+/* ▼▼▼ [追加] 結果画面の項目スタイル ▼▼▼ */
+.result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.25rem; /* 20px */
+    padding: 0.5rem; /* 8px */
+    background-color: #fdfaf2;
+    border-radius: 0.25rem; /* 4px */
+}
+.result-item-title {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 1rem; /* 16px */
+}
+.result-item-score {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem; /* 8px */
+    white-space: nowrap;
+}
+.result-item-distance {
+    font-size: 1rem; /* 16px */
+    color: #6d5b4b;
+}
+/* ▲▲▲ [追加] ここまで ▲▲▲ */
+
+
+/* --- 会話パートのスタイル --- */
+#dialogue-box {
+    background-color: rgba(20, 20, 20, 0.9); /* 少し透明なダークグレー */
+    color: #f5eeda;
+    box-shadow: 0 0 20px rgba(0,0,0,0.7);
+    border-color: #a4886d; /* 枠線の色はアクセントとして維持 */
+}
+
+#dialogue-box #speaker-name {
+    color: #ffd700; /* 話者名はゴールドに */
+}
+
+#dialogue-box #dialogue-text {
+    color: #fdfaf2; /* 本文のテキスト色は明るいまま */
+}
+
+#dialogue-box .animate-bounce {
+    color: #a4886d; /* 矢印の色を枠線と合わせる */
+}
+
+
+#character-display img {
+    animation: character-breath 5s ease-in-out infinite;
+}
+
+@keyframes character-breath {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+/* --- 会話パートの立ち絵制御 --- */
+#heroine-image, #caster-image {
+    transition: opacity 0.3s ease-in-out;
+}
+
+
+/* --- 実績画面のカードとボタンのスタイル --- */
+.achievement-card {
+    background-color: #fdfaf2;
+    border: 2px solid #a4886d;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    opacity: 0.7;
+    background-color: #e5e7eb; /* 未解除の色 (Tailwind gray-200) */
+}
+
+.achievement-card.unlocked {
+    opacity: 1;
+    background-color: #fefcbf; /* 解除済みの色 (Tailwind yellow-100) */
+    border-color: #fcd34d; /* (Tailwind yellow-400) */
+}
+
+.view-dialogue-button {
+    margin-top: auto; /* ボタンをカードの下部に配置 */
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    align-self: flex-end; /* ボタンを右下に配置 */
+}
+
+/* --- 会話パートの背景 --- */
+#dialogue-background-screen {
+    filter: blur(6px) brightness(0.6);
+    transform: scale(1.1); /* ぼかしによる端の滲みを隠す */
+}
+
+/* --- CG表示の魔法エフェクト --- */
+#fullscreen-image-container {
+    background-color: rgba(0,0,0,0.7);
+    z-index: 10; /* キャラクター(z-index: 5)より手前、セリフウィンドウ(z-index: 20)より後ろ */
+}
+
+@keyframes screen-wobble {
+    0% { transform: scale(1) skewX(0); filter: blur(0); }
+    30% { transform: scale(1.01) skewX(-2deg); filter: blur(1px); }
+    60% { transform: scale(1) skewX(2deg); filter: blur(0); }
+    100% { transform: scale(1) skewX(0); filter: blur(0); }
+}
+
+.screen-wobble-effect {
+    animation: screen-wobble 0.7s ease-in-out;
+}
+
+/* 継続的な画面揺れ用のアニメーション */
+@keyframes screen-wobble-continuous-keyframes {
+    0% { transform: translate(0, 0) rotate(0); }
+    25% { transform: translate(-2px, 1px) rotate(-0.2deg); }
+    50% { transform: translate(2px, -1px) rotate(0.2deg); }
+    75% { transform: translate(-1px, 2px) rotate(-0.2deg); }
+    100% { transform: translate(0, 0) rotate(0); }
+}
+
+.screen-wobble-continuous {
+    animation: screen-wobble-continuous-keyframes 0.5s linear infinite;
+}
+
+/* リップル（波紋）アニメーション */
+@keyframes ripple-in {
+    from {
+        clip-path: circle(0% at 50% 50%);
+        opacity: 0.8;
+    }
+    to {
+        clip-path: circle(75% at 50% 50%);
+        opacity: 1;
+    }
+}
+
+#fullscreen-image.effect-ripple {
+    animation: ripple-in 3.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* フェードインアニメーション */
+@keyframes magic-fade-in {
+    from { opacity: 0; transform: scale(1.1); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+#fullscreen-image.effect-fade {
+    animation: magic-fade-in 1.5s ease-out forwards;
+}
+
+/* --- エンドロールのスタイル --- */
+#end-roll-content {
+    /* アニメーションはJS側で動的に設定します */
+}
+
+@keyframes scroll-up {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(-100%);
+    }
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(20px); }
+    20% { opacity: 1; transform: translateY(0); }
+    80% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+}
+
+.end-roll-title-animation {
+    animation: fadeInOut 3s ease-in-out forwards;
+}
+
